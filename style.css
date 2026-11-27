@@ -6,10 +6,10 @@ body{background-color:#efede7;background-image:radial-gradient(#55456315 .7px,tr
 
 .token{background:transparent;border:0;border-bottom:1px dotted #8c8196;color:inherit;font:inherit;padding:2px 0;cursor:pointer}.token.marked,.tile[aria-pressed=true]{background:#d8ecd3;color:#21482e}.token.miss{background:#f8d7d0}.tile{font:inherit;border:1px solid #ada4ba;border-radius:8px;background:white;min-height:42px;padding:5px 13px;margin:3px}.assembly>p,.wordproof{font:bold 29px Georgia;text-align:center;overflow-wrap:anywhere}.wordproof{margin:8px;color:#493469}.wordproof mark{background:#ffdd89;color:inherit}.wordproof span,.wordproof mark{display:inline-block;animation:ink-in .48s ease-out both}.wordproof span:nth-child(even){animation-name:ink-right}.press-stamp{display:table;margin:13px auto 0;border:3px double #477356;color:#325e43;text-transform:uppercase;letter-spacing:1px;padding:5px 10px;transform:rotate(-3deg);animation:stamp .4s}.entry input{width:100%;font:inherit;border:1px solid #797481;border-radius:9px;padding:12px}.mini-pages{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:16px}.mini-pages div{background:#fffaf0;border:1px solid #b7a681;padding:7px 3px;min-width:0}.mini-pages b,.mini-pages small{display:block;font:600 11px Georgia;overflow-wrap:anywhere}.mini-pages i{display:block;height:13px;margin:5px;background:repeating-linear-gradient(#989083 0 1px,transparent 1px 4px)}.finished details{margin:15px 0}.assembly .next:disabled{opacity:.45}.scene .token:disabled{opacity:1}@keyframes ink-in{from{transform:translateX(-10px) scale(1.1);opacity:.4}}@keyframes ink-right{from{transform:translateX(10px);opacity:.4}}@media(prefers-reduced-motion:reduce){.wordproof span,.wordproof mark,.press-stamp{animation:none}}
 
-/* Put the action first on the proofreading page, at the sentence's reading size. */
-.playing[data-mode="proof"] .note,.playing[data-mode="proof"] .scene p{font-size:clamp(23px,2.7vw,32px);line-height:1.22}
-.playing[data-mode="proof"] .note{font-family:Georgia,serif;font-weight:bold;color:var(--ink);margin:18px 0 8px}
-.playing[data-mode="proof"] .scene{margin-top:6px}
+/* Put the action first in every card, at the sentence's reading size. */
+.playing .note,.playing .scene p{font-size:clamp(23px,2.7vw,32px);line-height:1.22}
+.playing .note{font-family:Georgia,serif;font-weight:bold;color:var(--ink);margin:18px 0 8px}
+.playing .scene{margin-top:6px}
 .teacher-alert{padding:0;border:4px solid #33233b;border-radius:16px;width:min(420px,90vw);text-align:center;color:#33233b;background:#fff0bb;box-shadow:7px 8px #33233b66}
 .teacher-alert::backdrop{background:#251a31bb}
 .teacher-alert[open]{animation:teacher-enter .18s ease-out}
