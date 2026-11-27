@@ -401,6 +401,21 @@ for(const q of bank){
   const card=mnemonicCards.get(q.word);
   if(card)q.hint=card[2];
 }
+const paintedCards=new Map([["в[о]кзал","A0","Циферблат вокзальных часов круглый, как О. За ним оставь К перед словом ЗАЛ."],["вел[о]сипед","A1","В середину велосипеда вкати колесо: его обод рисует О. Первые слоги — ВЕ-ЛО."],["вел[о]сипедист","A1","Велосипедист катит колесо. В слове обод занимает место О после Л."],["г[о]ризонтальный","A2","Круг солнца касается горизонта. Вставь его О между Г и Р."],["[о]бсерватория","A3","Телескоп смотрит в небо круглой линзой. С её О начинается слово."],["б[а]гаж","A4","На чемодане два ремня и поперечная застёжка. Обведи их пальцем — в слове появится А."],["к[а]ртина","A5","Красные ножки мольберта и его полочка рисуют А сразу после К."],["г[а]лерея","A5","У входа в галерею стоит один мольберт в форме А. Начни с ГАЛ: А и одна Л."],["б[а]гряный","A5","Художник красит мольберт в багряный цвет. Его рама — первая А в слове."],["[а]ттракцион","A6","Контур циркового шатра похож на заглавную А. За входом два турникета — две Т."],["к[а]рнавал","A6","На карнавале поставили пёстрый шатёр. Его скаты и гирлянда образуют А после К."],["[а]рхитектор","A7","Архитектор взял угольник. Видишь А? С неё и начинается название профессии."],["г[а]барит","A7","Чтобы измерить габарит, приложи угольник. В его контуре прячется А после Г."],["а[лл]ея","A8","В начале аллеи растут две ели. Преврати их кроны в две соседние буквы Л."],["ка[сс]ета","A9","В кассете две катушки. Их ленты закручиваются в две С."],["анте[нн]а","A10","Представь, что каждая мачта держит по букве Н. Две мачты — две Н перед последней А."],["ба[сс]ейн","A11","Две волны на соседних дорожках изгибаются, как две С. Прочитай: ба-СС-ейн."],["д[ири]жёр","B0","Две палочки отбивают две доли: ДИ — РИ. В каждом слоге по И."],["а[кк]орд","B1","Две выделенные клавиши звучат вместе. Каждая клавиша даёт одну К."],["а[кк]омпанемент","B1","Пианист начинает с аккорда. Две клавиши напоминают две К в начале обоих слов."],["ко[рр]еспондент","B2","Корреспондент печатает «КОРоткий Репортаж». Первая часть заканчивается на Р, вторая начинается с Р."],["ко[лл]екция","B3","Мысленно поставь по Л на соседних краях двух марок. Сдвинь марки: в коллекции получились две Л."],["режи[сс]ёр","B4","Режиссёр раздвигает две створки занавеса. Каждая Створка дарит одну С."],["пара[лл]ель","B5","Два рельса идут рядом. Напиши ПАРА, затем по Л для каждого рельса: пара-ЛЛ-ель."],["ка[лл]играфия","B6","Каждое перо выводит по одной Л. Два пера написали две соседние Л."],["гра[мм]","B7","Положи мысленно по М на каждую чашу весов. Для слова «грамм» понадобятся обе."],["диле[мм]а","B7","На каждой чаше — одна возможность и одна М. У дилеммы две М после Е и одна Л до Е."],["си[мм]етрия","B8","Проведи ось между арками. Поставь слева букву М, а справа её пару — ещё одну М."],["крест[-]накрест","B9","Лента пересекает саму себя. На месте узелка между КРЕСТ и НАКРЕСТ поставь дефис."],["на[ ]лету","B10","Волан и мяч разделяет дорожка воздуха. Оставь такой же просвет между НА и ЛЕТУ."],["а[кк]уратный","B11","Два Карандаша в аккуратном ряду напоминают две К после А."]].map(([pattern,tile,caption])=>{
+  const [,left,letter,right]=pattern.match(/^(.*?)\[(.+?)\](.*)$/);
+  return [left+letter+right,{left,letter,right,tile,caption}];
+}));
+function paintedHint(q){
+  const art=paintedCards.get(q.word);
+  if(!art)return '';
+  const atlas=art.tile[0],index=Number(art.tile.slice(1)),x=(index%4)*100/3,y=Math.floor(index/4)*50;
+  if(!document.querySelector('#paint-'+atlas)){
+    const link=document.createElement('link');link.id='paint-'+atlas;link.rel='stylesheet';link.href='art/watercolor-'+atlas+'.css';document.head.append(link);
+  }
+  const glyph=art.letter===' '?'␣':art.letter;
+  return '<figure class="paint-card"><div class="paint-word" aria-label="'+q.word+'"><span aria-hidden="true">'+art.left+'</span><span class="paint-anchor" aria-hidden="true"><i class="paint-picture paint-'+atlas+'" style="background-position:'+x+'% '+y+'%"></i><b>'+glyph+'</b></span><span aria-hidden="true">'+art.right+'</span></div><figcaption>'+art.caption+'</figcaption></figure>';
+}
+
 function memoryCue(q){
   const card=mnemonicCards.get(q.word);
   if(!card)return '';
@@ -416,7 +431,7 @@ function memory(q){
 function answer(ok){
   if(locked)return;locked=true;const q=current(),log=review?reviewed:answers;log.push(ok);progress();
   for(const el of game.querySelectorAll('button,input'))el.disabled=true;
-  const feedback=game.querySelector('#feedback');feedback.innerHTML='<div class="memo"><b>'+(ok?'✓ Верно':'✕ Правильное написание')+'</b><div class="wordproof">'+memory(q)+'</div>'+memoryCue(q)+'<p>'+q.hint+'</p></div>';
+  const feedback=game.querySelector('#feedback');feedback.innerHTML='<div class="memo"><b>'+(ok?'✓ Верно':'✕ Правильное написание')+'</b>'+(paintedHint(q)||('<div class="wordproof">'+memory(q)+'</div>'+memoryCue(q)+'<p>'+q.hint+'</p>'))+'</div>';
   if(!review&&log.length%5===0)feedback.insertAdjacentHTML('beforeend','<div class="press-stamp">В печать · '+sections[log.length/5-1]+'</div>');
   const done=log.length===(review?review.length:20);
   const next=button(feedback,done?(review?'Итог реванша':'Получить выпуск'):!review&&log.length%5===0?'Следующая полоса →':'Дальше →',()=>{if(done)finish();else{show();game.querySelector('#line').focus({preventScroll:true})}},'next');
