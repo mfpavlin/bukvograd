@@ -89,7 +89,7 @@ function show(){
   const mode=['headline','proof','letter','build'][section];
   game.className='panel playing';game.dataset.ink=['plum','sea','sunset','plum'][section]||'sea';
   const label=sections[section]; game.dataset.mode=mode;
-  game.innerHTML='<div class="top"><span class="serial">'+(review?'ПОВТОР '+(reviewed.length+1)+' / '+review.length:'ПОЛОСА '+(section+1)+' / 4 · '+(n%5+1)+' / 5')+'</span><span class="type">'+label+'</span></div><p class="note"></p><div class="scene"><div class="medallion" aria-hidden="true">'+q.icon+'</div><p id="line" tabindex="-1"></p></div><div class="choices"></div><div id="feedback" role="status"></div>';
+  game.innerHTML='<div class="top"><span class="serial">'+(review?'ПОВТОР '+(reviewed.length+1)+' / '+review.length:'ПОЛОСА '+(section+1)+' / 4 · '+(n%5+1)+' / 5')+'</span><span class="type">'+label+'</span></div><h2 class="task-instruction note"></h2><div class="scene"><div class="medallion" aria-hidden="true">'+q.icon+'</div><p id="line" tabindex="-1"></p></div><div class="choices"></div><div id="feedback" role="status"></div>';
   const line=game.querySelector('#line'),note=game.querySelector('.note'),choices=game.querySelector('.choices');
   const context=(mode==='headline'?headlines.get(q.word):q.context).replace('___','…');
   line.textContent=context;
@@ -120,7 +120,7 @@ function show(){
     }
     const check=button(choices,'Проверить',()=>answer(display.textContent===q.word),'next');check.disabled=true;return;
   }
-  note.textContent=mode==='letter'?'Выбери написание, которое подходит по смыслу.':'Подготовь заголовок к печати. Выбери верное написание.';options();
+  note.textContent=mode==='letter'?'Выбери написание, которое подходит по смыслу.':'Выбери правильное написание слова для заголовка.';options();
 }
 function memory(q){
   if(q.word==='коллекция')return '<span>кол</span><span>лекция</span>';
