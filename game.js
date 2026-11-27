@@ -89,11 +89,10 @@ function show(){
   const mode=['headline','proof','letter','build'][section];
   game.className='panel playing';game.dataset.ink=['plum','sea','sunset','plum'][section]||'sea';
   const label=sections[section]; game.dataset.mode=mode;
-  game.innerHTML='<div class="top"><span class="serial">'+(review?'ПОВТОР '+(reviewed.length+1)+' / '+review.length:'ПОЛОСА '+(section+1)+' / 4 · '+(n%5+1)+' / 5')+'</span><span class="type">'+label+'</span></div><div class="scene"><div class="medallion" aria-hidden="true">'+q.icon+'</div><p id="line" tabindex="-1"></p></div><p class="note"></p><div class="choices"></div><div id="feedback" role="status"></div>';
+  game.innerHTML='<div class="top"><span class="serial">'+(review?'ПОВТОР '+(reviewed.length+1)+' / '+review.length:'ПОЛОСА '+(section+1)+' / 4 · '+(n%5+1)+' / 5')+'</span><span class="type">'+label+'</span></div><p class="note"></p><div class="scene"><div class="medallion" aria-hidden="true">'+q.icon+'</div><p id="line" tabindex="-1"></p></div><div class="choices"></div><div id="feedback" role="status"></div>';
   const line=game.querySelector('#line'),note=game.querySelector('.note'),choices=game.querySelector('.choices');
   const context=(mode==='headline'?headlines.get(q.word):q.context).replace('___','…');
   line.textContent=context;
-  if(mode==='proof')game.querySelector('.scene').before(note);
   function options(){
     shuffle(q.forms,rng).forEach(f=>{const b=button(choices,f,()=>{if(locked)return;b.classList.add(f===q.word?'good':'bad');for(const other of choices.children)if(other.textContent===q.word)other.classList.add('good');answer(f===q.word)})});
   }
