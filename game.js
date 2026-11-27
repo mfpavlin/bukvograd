@@ -59,7 +59,7 @@ function shuffle(list,rng){
   for(let i=copy.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[copy[i],copy[j]]=[copy[j],copy[i]]}
   return copy;
 }
-function edition(value){
+function legacyEdition(value){
   const rng=randomizer(value),used=new Set();
   function select(pool){
     const group=shuffle(pool.filter(q=>!used.has(q)),rng).slice(0,5);
@@ -67,9 +67,40 @@ function edition(value){
   }
   return [...select(bank.filter(q=>headlines.has(q.word))),...select(classic),...select(phrases),...select([...classic,...glossary])];
 }
-function start(value, rival=null){
+const historyKey='bukvograd.recent-words.v1';
+const wordPool=[...classic,...glossary];
+let recentWords=[];
+function readHistory(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(historyKey));
+    if(Array.isArray(saved))return saved.filter(word=>typeof word==='string').slice(-bank.length);
+  }catch{}
+  return recentWords;
+}
+function freshEdition(value,recent){
+  const rng=randomizer(value);
+  const ranks=new Map(recent.map((word,i)=>[word,i+1]));
+  function draw(pool,count){
+    // Randomize ties. Unused words come first, then the least recently dealt.
+    return shuffle(pool,rng).sort((a,b)=>(ranks.get(a.word)||0)-(ranks.get(b.word)||0)).slice(0,count);
+  }
+  const words=shuffle(draw(wordPool,15),rng);
+  return [...words.slice(0,10),...draw(phrases,5),...words.slice(10)];
+}
+function readSharedCards(raw){
+  if(!raw||!/^([0-9a-z]{1,2}-){19}[0-9a-z]{1,2}$/.test(raw))return null;
+  const cards=raw.split('-').map(id=>bank[parseInt(id,36)]);
+  if(new Set(cards).size!==20||!cards.every((q,i)=>q&&((q.type==='phrase')===(i>=10&&i<15))))return null;
+  return cards;
+}
+function start(value,rival=null,sharedCards=null){
   seed=value??crypto.getRandomValues(new Uint32Array(1))[0];opponent=rival;
-  issue=edition(seed);answers=[];review=null;reviewed=[];show();
+  const recent=readHistory();
+  issue=sharedCards??(value===undefined?freshEdition(seed,recent):legacyEdition(seed));
+  const words=issue.map(q=>q.word), selected=new Set(words);
+  recentWords=[...recent.filter(word=>!selected.has(word)),...words];
+  try{localStorage.setItem(historyKey,JSON.stringify(recentWords))}catch{}
+  answers=[];review=null;reviewed=[];show();
 }
 function current(){return review?review[reviewed.length]:issue[answers.length]}
 function progress(){
@@ -91,7 +122,7 @@ function show(){
   const label=sections[section]; game.dataset.mode=mode;
   game.innerHTML='<div class="top"><span class="serial">'+(review?'ПОВТОР '+(reviewed.length+1)+' / '+review.length:'ПОЛОСА '+(section+1)+' / 4 · '+(n%5+1)+' / 5')+'</span><span class="type">'+label+'</span></div><h2 class="task-instruction note"></h2><div class="scene"><div class="medallion" aria-hidden="true">'+q.icon+'</div><p id="line" tabindex="-1"></p></div><div class="choices"></div><div id="feedback" role="status"></div>';
   const line=game.querySelector('#line'),note=game.querySelector('.note'),choices=game.querySelector('.choices');
-  const context=(mode==='headline'?headlines.get(q.word):q.context).replace('___','…');
+  const context=(mode==='headline'?(headlines.get(q.word)??q.context):q.context).replace('___','…');
   line.textContent=context;
   function options(){
     shuffle(q.forms,rng).forEach(f=>{const b=button(choices,f,()=>{if(locked)return;b.classList.add(f===q.word?'good':'bad');for(const other of choices.children)if(other.textContent===q.word)other.classList.add('good');answer(f===q.word)})});
@@ -99,14 +130,15 @@ function show(){
   if(mode==='proof'){
     const wrong=shuffle(q.forms.slice(1),rng)[0];
     note.textContent='Найди и нажми слово с опечаткой.';line.textContent='';
-    const original=q.context.replace('___',wrong);
+    const excerpt=q.type==='definition'?'___ — '+q.context.charAt(0).toLowerCase()+q.context.slice(1)+'.':q.context;
+    const original=excerpt.replace('___',wrong);
     let found=false,firstTry=true;
     for(const token of original.match(/[а-яёА-ЯЁ-]+|[^а-яёА-ЯЁ-]+/g)){
       if(!/[а-яё]/i.test(token)){line.append(token);continue}
       const b=button(line,token,()=>{if(found)return;
         if(token!==wrong){firstTry=false;b.classList.add('miss');note.textContent='Это слово написано верно. Поищи опечатку в другом слове.';return}
         found=true;b.classList.add('marked');note.textContent='Выбери правильное написание.';
-        shuffle(q.forms,rng).forEach(f=>{const opt=button(choices,f,()=>{if(locked)return;opt.classList.add(f===q.word?'good':'bad');for(const el of choices.children)if(el.textContent===q.word)el.classList.add('good');line.textContent=q.context.replace('___',q.word);answer(firstTry&&f===q.word)})});},'token');
+        shuffle(q.forms,rng).forEach(f=>{const opt=button(choices,f,()=>{if(locked)return;opt.classList.add(f===q.word?'good':'bad');for(const el of choices.children)if(el.textContent===q.word)el.classList.add('good');line.textContent=excerpt.replace('___',q.word);answer(firstTry&&f===q.word)})});},'token');
     }
     return;
   }
@@ -120,7 +152,7 @@ function show(){
     }
     const check=button(choices,'Проверить',()=>answer(display.textContent===q.word),'next');check.disabled=true;return;
   }
-  note.textContent=mode==='letter'?'Выбери написание, которое подходит по смыслу.':'Выбери правильное написание слова для заголовка.';options();
+  note.textContent=mode==='letter'?'Выбери написание, которое подходит по смыслу.':(q.type==='definition'&&!headlines.has(q.word)?'По определению выбери слово для заголовка.':'Выбери правильное написание слова для заголовка.');options();
 }
 // Visual spelling cues; square brackets mark the fragments to emphasize.
 const mnemonicCards = new Map([
@@ -431,7 +463,7 @@ function teacherInterrupt(next){
 function finish(){
   const score=answers.filter(Boolean).length,level=grade(score),[icon,title]=titles[level-1];
   const mistakes=issue.filter((q,i)=>!answers[i]);game.className='panel finished';
-  const url=new URL(pageUrl);url.searchParams.set('issue',seed);url.searchParams.set('score',score);
+  const url=new URL(pageUrl);url.searchParams.set('issue',seed);url.searchParams.set('cards',issue.map(q=>bank.indexOf(q).toString(36)).join('-'));url.searchParams.set('score',score);
   const share=new URL('https://t.me/share/url');share.searchParams.set('url',url.href);share.searchParams.set('text','Я выпустил свой номер Буквограда! Сыграем на тех же 20 заданиях?');
   game.innerHTML='<div class="diploma"><p class="label">Школьная газета · выпуск готов</p><div class="seal">'+icon+'</div><h2>'+title+'</h2><p><b>'+level+' / 10</b> · уровень звания</p><strong>Верных ответов: '+score+' из 20</strong><div class="mini-pages">'+sections.map((s,i)=>'<div><small>Полоса '+(i+1)+'</small><b>'+s+'</b><i></i></div>').join('')+'</div></div>';
   if(opponent!==null)game.insertAdjacentHTML('beforeend','<p class="memo">Твой результат — '+score+'/20. У друга — '+opponent+'/20. '+(score===opponent?'Ничья!':score>opponent?'Ты впереди!':'Есть повод для реванша!')+'</p>');
@@ -443,4 +475,6 @@ function finish(){
 }
 const params=new URLSearchParams(location.search),issueId=params.get('issue'),rival=params.get('score');
 const validSeed=/^\d{1,10}$/.test(issueId)&&Number(issueId)<=4294967295;
-start(validSeed?Number(issueId):undefined, validSeed&&/^\d{1,2}$/.test(rival)&&Number(rival)<=20?Number(rival):null);
+const sharedCards=readSharedCards(params.get('cards'));
+const validIssue=validSeed&&(!params.has('cards')||!!sharedCards);
+start(validIssue?Number(issueId):undefined, validIssue&&/^\d{1,2}$/.test(rival)&&Number(rival)<=20?Number(rival):null,validIssue?sharedCards:null);
