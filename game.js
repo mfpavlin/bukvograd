@@ -84,29 +84,22 @@ function button(parent,label,fn,cls='choice'){
   const b=document.createElement('button');b.className=cls;b.textContent=label;b.onclick=fn;parent.append(b);return b;
 }
 function show(){
-  locked=false;progress();const q=current(),n=answers.length,section=Math.floor(n/5);
-  const rng=randomizer(seed^Math.imul((review?reviewed.length+41:n)+1,2654435761));
-  const mode=review?'review':['headline','proof','letter','build'][section];
+  locked=false;progress();const q=current(),n=issue.indexOf(q),section=Math.floor(n/5);
+  const rng=randomizer(seed^Math.imul(n+1,2654435761));
+  const mode=['headline','proof','letter','build'][section];
   game.className='panel playing';game.dataset.ink=['plum','sea','sunset','plum'][section]||'sea';
-  const label=review?'Реванш':sections[section];
+  const label=sections[section]; game.dataset.mode=mode;
   game.innerHTML='<div class="top"><span class="serial">'+(review?'ПОВТОР '+(reviewed.length+1)+' / '+review.length:'ПОЛОСА '+(section+1)+' / 4 · '+(n%5+1)+' / 5')+'</span><span class="type">'+label+'</span></div><div class="scene"><div class="medallion" aria-hidden="true">'+q.icon+'</div><p id="line" tabindex="-1"></p></div><p class="note"></p><div class="choices"></div><div id="feedback" role="status"></div>';
   const line=game.querySelector('#line'),note=game.querySelector('.note'),choices=game.querySelector('.choices');
   const context=(mode==='headline'?headlines.get(q.word):q.context).replace('___','…');
   line.textContent=context;
-  if(mode==='review'){
-    note.textContent=q.type==='definition'?'Напечатай слово по определению.':'Впиши пропущенное слово или выражение.';
-    choices.className='entry';const form=document.createElement('form');
-    form.innerHTML='<input aria-label="Твой ответ" placeholder="Твой ответ" autocomplete="off" autocapitalize="none" spellcheck="false" required><button class="next">Проверить</button>';choices.append(form);
-    form.onsubmit=e=>{e.preventDefault();const input=form.querySelector('input');if(!input.value.trim())return;
-      const normalize=s=>s.toLowerCase().trim().replace(/ё/g,'е').replace(/[‐‑]/g,'-').replace(/\s+/g,' ');
-      answer(normalize(input.value)===normalize(q.word));};return;
-  }
+  if(mode==='proof')game.querySelector('.scene').before(note);
   function options(){
     shuffle(q.forms,rng).forEach(f=>{const b=button(choices,f,()=>{if(locked)return;b.classList.add(f===q.word?'good':'bad');for(const other of choices.children)if(other.textContent===q.word)other.classList.add('good');answer(f===q.word)})});
   }
   if(mode==='proof'){
     const wrong=shuffle(q.forms.slice(1),rng)[0];
-    note.textContent='Коснись слова с опечаткой, затем выбери исправление.';line.textContent='';
+    note.textContent='Найди и нажми слово с опечаткой.';line.textContent='';
     const original=q.context.replace('___',wrong);
     let found=false,firstTry=true;
     for(const token of original.match(/[а-яёА-ЯЁ-]+|[^а-яёА-ЯЁ-]+/g)){
@@ -144,7 +137,45 @@ function answer(ok){
   const done=log.length===(review?review.length:20);
   const next=button(feedback,done?(review?'Итог реванша':'Получить выпуск'):!review&&log.length%5===0?'Следующая полоса →':'Дальше →',()=>{if(done)finish();else{show();game.querySelector('#line').focus({preventScroll:true})}},'next');
   next.focus({preventScroll:true});
+  const mistakes=log.filter(correct=>!correct).length;
+  if(!ok && (mistakes===3 || mistakes>=5))teacherInterrupt(next);
 }
+
+let voiceContext;
+function teacherCry(){
+  const Audio=window.AudioContext || window.webkitAudioContext;
+  if(!Audio)return;
+  try{
+    const ctx=voiceContext??=new Audio();
+    ctx.resume().then(()=>{
+      const t=ctx.currentTime, voice=ctx.createOscillator(), volume=ctx.createGain();
+      voice.type='sawtooth';voice.frequency.setValueAtTime(310,t);
+      voice.frequency.exponentialRampToValueAtTime(475,t+.12);
+      voice.frequency.exponentialRampToValueAtTime(270,t+.55);
+      volume.gain.setValueAtTime(.001,t);
+      volume.gain.exponentialRampToValueAtTime(.13,t+.04);
+      volume.gain.exponentialRampToValueAtTime(.001,t+.58);
+      const filters=[780,1250,2700].map(hz=>{
+        const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=hz;f.Q.value=6;
+        voice.connect(f);f.connect(volume);return f;
+      });
+      volume.connect(ctx.destination);voice.onended=()=>{voice.disconnect();filters.forEach(f=>f.disconnect());volume.disconnect()};
+      voice.start(t);voice.stop(t+.6);
+    }).catch(()=>{});
+  }catch{}
+}
+function teacherInterrupt(next){
+  const overlay=document.createElement('dialog');
+  overlay.className='teacher-alert';overlay.setAttribute('aria-label','Учительница с указкой: внимание!');
+  overlay.innerHTML='<div class="comic"><div class="teacher" aria-hidden="true"><i class="jacket"></i><i class="bun"></i><i class="face"><i class="hair"></i><i class="glasses"></i><i class="mouth"></i></i><i class="sleeve"></i><i class="pointer"></i></div><strong>А-а-а!<small>Внимание на буквы!</small></strong></div><button type="button">К разбору ошибки →</button>';
+  document.body.append(overlay);
+  const close=()=>{clearTimeout(timer);overlay.remove();next.focus({preventScroll:true})};
+  const timer=setTimeout(close,1900);
+  overlay.querySelector('button').onclick=close;
+  overlay.oncancel=e=>{e.preventDefault();close()};
+  overlay.showModal();teacherCry();
+}
+
 function finish(){
   const score=answers.filter(Boolean).length,level=grade(score),[icon,title]=titles[level-1];
   const mistakes=issue.filter((q,i)=>!answers[i]);game.className='panel finished';
