@@ -29,3 +29,5 @@ body{background-color:#efede7;background-image:radial-gradient(#55456315 .7px,tr
 .teacher .pointer{left:170px;top:28px;width:6px;height:80px;background:#77462a;border:1px solid #33233b;border-radius:4px;transform:rotate(17deg);transform-origin:bottom}
 @keyframes teacher-enter{from{opacity:.3;transform:scale(.72) rotate(-4deg)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.teacher-alert[open]{animation:none}}
+
+#game.playing .task-instruction{font:700 clamp(23px,2.7vw,32px)/1.22 Georgia,serif;color:var(--ink);margin:18px 0 8px;text-align:left}
